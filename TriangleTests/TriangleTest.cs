@@ -152,7 +152,7 @@ namespace TriangleTests
         public void InfoGreatestArea_CorrectTriangles_ReturnsStringWithData()
         {
             controller.InfoGreatestArea(TrianglesArray)
-                .Should().BeEquivalentTo(_generateOutput(5.95, 6, 6, 17.95, 15.5));            
+                .Should().BeEquivalentTo(_generateOutput(5.95, 6, 6, 17.95, 15.5));
         }
 
         public static Triangle[] TrianglesArray =
