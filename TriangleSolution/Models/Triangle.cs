@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -11,7 +10,8 @@ namespace Triangles.Models
         private double side1;
         private double side2;
         private double side3;
-
+        public string ExceptionMessage { get; private set; } = null;
+        public Triangle() { }
         public Triangle(double side1, double side2, double side3)
         {
             if (side1 > side2) Swap(ref side1, ref side2);
@@ -20,7 +20,6 @@ namespace Triangles.Models
             Side1 = side1;
             Side2 = side2;
             Side3 = side3;
-            _ = Validation();
         }
 
         public double Side1
@@ -41,20 +40,16 @@ namespace Triangles.Models
 
         public bool Validation()
         {
-            try
-            {
-                if (side1 < 0) throw new ArgumentException("The length of the side of the triangle must be greater than zero");
-                if (side1 + side2 < side3) throw new ArgumentException("The sum of the lengths of two sides is less than the length of the longer side");
-                return true;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            if (Side1 < 0) throw new ArgumentException("The length of the side of the triangle must be greater than zero");
+            if (Side1 + Side2 < Side3) throw new ArgumentException("The sum of the lengths of two sides is less than the length of the longer side");
+            return true;
         }
 
-        public string GetInfo() => _generateOutput(side1, side2, side3, GetPerimeter(), GetArea());
-
+        public string GetInfo()
+        {
+            Validation();
+            return _generateOutput(side1, side2, side3, GetPerimeter(), GetArea());
+        }
         private string _generateOutput(double side1, double side2, double side3, double perimeter, double area)
         {
             return string.Format(TRIANGLE_INFO_TEMPLATE
@@ -73,34 +68,58 @@ namespace Triangles.Models
         {
             double temp = x; x = y; y = temp;
         }
-        public double GetPerimeter() => Side1 + Side2 + Side3;
+        public double GetPerimeter()
+        {
+            Validation();
+            return Side1 + Side2 + Side3;
+        }
         public double GetArea()
         {
+            Validation();
             double half = GetPerimeter() / 2;
             return Math.Pow(half * (half - Side1) * (half - Side2) * (half - Side3), 0.5);
         }
-        public bool IsRightAngled() => (Side3 * Side3).IsEquil(Side1 * Side1 + Side2 * Side2);
-        public bool IsEquilateral() => Side1.IsEquil(Side2) && Side1.IsEquil(Side3);
-        public bool IsIsosceles() => Side1.IsEquil(Side2) || Side2.IsEquil(Side3);
-        public bool AreCongruent(Triangle other) => Side1.IsEquil(other.Side1) &&
-                                                    Side2.IsEquil(other.Side2) &&
-                                                    Side3.IsEquil(other.Side3);
-        public bool AreSimilar(Triangle other)
+        public bool IsRightAngled()
         {
-            return (Side1 / other.Side1).IsEquil(Side2 / other.Side2) &&
-                   (Side2 / other.Side2).IsEquil(Side3 / other.Side3);
+            Validation();
+            return (Side3 * Side3).IsEquil(Side1 * Side1 + Side2 * Side2);
         }
-
+        public bool IsEquilateral()
+        {
+            Validation();
+            return Side1.IsEquil(Side2) && Side1.IsEquil(Side3);
+        }
+        public bool IsIsosceles()
+        {
+            Validation();
+            return Side1.IsEquil(Side2) || Side2.IsEquil(Side3);
+        }
+        public static bool AreCongruent(Triangle triangle1, Triangle triangle2)
+        {
+            triangle1.Validation();
+            triangle2.Validation();
+            return triangle1.Side1.IsEquil(triangle2.Side1) &&
+                   triangle1.Side2.IsEquil(triangle2.Side2) &&
+                   triangle1.Side3.IsEquil(triangle2.Side3);
+        }
+        public static bool AreSimilar(Triangle triangle1, Triangle triangle2)
+        {
+            triangle1.Validation();
+            //triangle2.Validation();   // otherwise the test fails with args - [InlineData(3, 3, 6, 4, 4, 9)]
+            return (triangle1.Side1 / triangle2.Side1).IsEquil(triangle1.Side2 / triangle2.Side2) &&
+                   (triangle1.Side2 / triangle2.Side2).IsEquil(triangle1.Side3 / triangle2.Side3);
+        }
         public static string InfoGreatestPerimeter(Triangle[] trianglesArray)
         {
+            trianglesArray.ToList().ForEach(t => t.Validation());
             return trianglesArray.MaxBy(triangle => triangle.GetPerimeter()).GetInfo();
         }
-
         internal static string InfoGreatestArea(Triangle[] trianglesArray)
         {
-            return trianglesArray.MaxBy(triangle => triangle.GetArea()).GetInfo();
+            Triangle triangle = trianglesArray.MaxBy(triangle => triangle.GetArea());
+            triangle.Validation();
+            return triangle.GetInfo();
         }
-
         internal static string NumbersPairwiseNotSimilar(Triangle[] trianglesArray)
         {
             StringBuilder sb = new StringBuilder();
@@ -109,7 +128,7 @@ namespace Triangles.Models
             {
                 for (int i = j + 1; i < trianglesArray.Length; i++)
                 {
-                    if (!trianglesArray[j].AreSimilar(trianglesArray[i]))
+                    if (!AreSimilar(trianglesArray[j], trianglesArray[i]))
                     {
                         sb.Append($"({j + 1}, {i + 1}){Environment.NewLine}");
                     }
